@@ -1045,7 +1045,7 @@ function closeModal() {
 // ⚠️ GANTI dengan public key VAPID milikmu sendiri!
 // Generate dengan: npx web-push generate-vapid-keys
 // Key PUBLIK aman ditaruh di sini. Key PRIVAT hanya di server/Edge Function.
-const VAPID_PUBLIC_KEY = 'YOUR_VAPID_PUBLIC_KEY_HERE';
+const VAPID_PUBLIC_KEY = 'BOY0nq_4NfpSNKd77yQ_dTX7LL-6f7gWonECqMx2TxCKJ4iGAaM5XETor7rFWPP6pJipJ8TnCmug-W9xVVcI9DA';
 
 function requestNotificationPermission() {
     if ('Notification' in window && Notification.permission === 'default') {
