@@ -34,7 +34,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
     setupEventListeners();
-    requestNotificationPermission();
+    // NOTE: Notification permission is now triggered by user clicking
+    // the "Aktifkan Notifikasi" banner, not auto-requested on load.
 });
 
 // ---- ROUTING ----
@@ -160,6 +161,17 @@ function setupEventListeners() {
 
     // --- Reminder Bell ---
     document.getElementById('btn-reminder').addEventListener('click', triggerReminder);
+
+    // --- Aktifkan Notifikasi Button ---
+    const enableNotifBtn = document.getElementById('btn-enable-notif');
+    if (enableNotifBtn) {
+        enableNotifBtn.addEventListener('click', async () => {
+            enableNotifBtn.textContent = 'Meminta...';
+            enableNotifBtn.disabled = true;
+            await requestNotificationPermission();
+            // Button click satisfies the browser's user-gesture requirement
+        });
+    }
 
     // --- LOGIN FORM ---
     document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -403,8 +415,10 @@ async function initDashboard() {
         select.appendChild(opt);
     });
 
+    showNotifBannerIfNeeded(); // show or hide the permission banner
     await fetchTasks();
 }
+
 
 async function fetchTasks() {
     const container = document.getElementById('task-container');
@@ -457,20 +471,31 @@ async function fetchTasks() {
             status: globalDoneSet.has(String(t.id)) ? 'completed' : 'pending'
         }));
 
-        // 4. Merge and sort (urgent first, then by deadline)
+        // 4. Merge and deduplicate, then sort with new priority rules:
+        //    GROUP A (top): pending tasks with FUTURE deadline → sorted nearest first
+        //    GROUP B (bottom): completed tasks OR past-deadline tasks → sorted soonest first within group
         const map = new Map();
         [...(personalTasks || []), ...globalTasks].forEach(t => map.set(t.id, t));
+        const now = new Date();
+
         AppState.tasks = Array.from(map.values()).sort((a, b) => {
-            const doneA = a.status === 'completed';
-            const doneB = b.status === 'completed';
-            // Completed tasks go last
-            if (doneA && !doneB) return 1;
-            if (!doneA && doneB) return -1;
-            const urgentA = isUrgent(a.deadline, a.status);
-            const urgentB = isUrgent(b.deadline, b.status);
-            if (urgentA && !urgentB) return -1;
-            if (!urgentA && urgentB) return 1;
-            return new Date(a.deadline) - new Date(b.deadline);
+            const isCompletedA = a.status === 'completed';
+            const isCompletedB = b.status === 'completed';
+            const dlA = new Date(a.deadline); dlA.setHours(23, 59, 59, 999);
+            const dlB = new Date(b.deadline); dlB.setHours(23, 59, 59, 999);
+            const isPastA = dlA < now;
+            const isPastB = dlB < now;
+
+            // A task is "low priority" if it's completed OR its deadline has passed
+            const lowA = isCompletedA || isPastA;
+            const lowB = isCompletedB || isPastB;
+
+            // Group A (active+future) always above Group B (done/past)
+            if (!lowA && lowB) return -1;
+            if (lowA && !lowB) return 1;
+
+            // Within same group: sort by deadline ascending (nearest first)
+            return dlA - dlB;
         });
 
         checkUrgentTasks();
@@ -1047,21 +1072,67 @@ function closeModal() {
 // Key PUBLIK aman ditaruh di sini. Key PRIVAT hanya di server/Edge Function.
 const VAPID_PUBLIC_KEY = 'BOY0nq_4NfpSNKd77yQ_dTX7LL-6f7gWonECqMx2TxCKJ4iGAaM5XETor7rFWPP6pJipJ8TnCmug-W9xVVcI9DA';
 
-function requestNotificationPermission() {
-    if ('Notification' in window && Notification.permission === 'default') {
-        setTimeout(() => {
-            Notification.requestPermission().then(perm => {
-                if (perm === 'granted') {
-                    if (AppState.tasks.length > 0) checkUrgentTasks();
-                    subscribeToPush(); // attempt Web Push subscription
-                }
-            });
-        }, 3000); // Delay 3s to let page settle
+// Show/hide the notification banner based on current permission state
+function showNotifBannerIfNeeded() {
+    const banner = document.getElementById('notif-banner');
+    if (!banner) return;
+
+    const dismissed = localStorage.getItem('rpl_notif_dismissed') === '1';
+
+    if (!('Notification' in window) || dismissed) {
+        banner.style.display = 'none';
+        return;
+    }
+
+    if (Notification.permission === 'default') {
+        // Not decided yet — show banner
+        banner.style.display = 'block';
     } else if (Notification.permission === 'granted') {
-        // Already granted on reload — try subscribing silently
+        // Already allowed — hide banner, subscribe silently
+        banner.style.display = 'none';
         subscribeToPush();
+    } else {
+        // 'denied' — hide banner, nothing we can do
+        banner.style.display = 'none';
     }
 }
+
+// Called when user clicks "Aktifkan" button — MUST be triggered by a click event
+async function requestNotificationPermission() {
+    const banner = document.getElementById('notif-banner');
+    const enableBtn = document.getElementById('btn-enable-notif');
+
+    if (!('Notification' in window)) {
+        if (banner) banner.style.display = 'none';
+        return;
+    }
+
+    // If already decided, respect the existing state
+    if (Notification.permission === 'granted') {
+        if (banner) banner.style.display = 'none';
+        await subscribeToPush();
+        return;
+    }
+    if (Notification.permission === 'denied') {
+        if (banner) banner.style.display = 'none';
+        if (enableBtn) { enableBtn.textContent = 'Diblokir'; enableBtn.disabled = true; }
+        return;
+    }
+
+    // Request permission — works because it's called directly from a click handler
+    const perm = await Notification.requestPermission();
+
+    if (perm === 'granted') {
+        if (banner) banner.style.display = 'none';
+        if (AppState.tasks.length > 0) checkUrgentTasks();
+        await subscribeToPush();
+    } else {
+        // User denied — dismiss banner
+        if (banner) banner.style.display = 'none';
+        if (enableBtn) { enableBtn.textContent = 'Ditolak'; enableBtn.disabled = true; }
+    }
+}
+
 
 // Convert base64 VAPID public key to Uint8Array for browser subscription
 function urlBase64ToUint8Array(base64String) {
