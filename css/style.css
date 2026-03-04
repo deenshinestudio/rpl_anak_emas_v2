@@ -42,7 +42,7 @@
   --clr-primary: #7C3AED;
   --clr-primary-light: #A78BFA;
   --clr-secondary: #06B6D4;
-  --clr-accent: #F59E0B;
+  --clr-accent: #ff9900;
   --clr-danger: #EF4444;
   --clr-success: #10B981;
   --clr-card: rgba(255, 255, 255, 0.85);
@@ -555,4 +555,212 @@ textarea:focus {
   justify-content: center;
   transition: all 0.2s;
   flex-shrink: 0;
+}
+
+/* ============================================
+   MICRO-INTERACTIONS: Checkbox Pop Animation
+   ============================================ */
+@keyframes checkboxPop {
+  0% {
+    transform: scale(1);
+  }
+
+  30% {
+    transform: scale(1.4) rotate(-8deg);
+  }
+
+  55% {
+    transform: scale(0.85) rotate(5deg);
+  }
+
+  75% {
+    transform: scale(1.12) rotate(-3deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.checkbox-pop {
+  animation: checkboxPop 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Task title completed transition */
+.task-card h4 {
+  transition: color 0.35s ease, text-decoration 0.35s ease;
+}
+
+.task-card.completed-task h4 {
+  color: #9CA3AF !important;
+  text-decoration: line-through !important;
+}
+
+/* Completed card soft fade */
+.task-card {
+  transition: opacity 0.35s ease, filter 0.35s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ============================================
+   REMINDER POPUP: Notification Item Styles
+   ============================================ */
+
+/* Reminder popup — shown state */
+#reminder-popup.show {
+  display: flex !important;
+}
+
+#reminder-popup.show #reminder-card {
+  transform: translateY(0) !important;
+  opacity: 1 !important;
+}
+
+/* Individual task item inside popup */
+.reminder-task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1.5px solid #F3F0FF;
+  background: #FAFAFA;
+  transition: background 0.2s;
+}
+
+.reminder-task-item.urgent {
+  background: linear-gradient(135deg, #FFF1F2, #FFF7ED);
+  border-color: #FCA5A5;
+}
+
+.reminder-task-item.near {
+  background: linear-gradient(135deg, #FFFBEB, #FFF7ED);
+  border-color: #FCD34D;
+}
+
+.reminder-task-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.reminder-task-icon.urgent {
+  background: #FEE2E2;
+}
+
+.reminder-task-icon.near {
+  background: #FEF3C7;
+}
+
+.reminder-task-icon.normal {
+  background: #F5F3FF;
+}
+
+.reminder-task-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.reminder-task-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1E1B4B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reminder-task-meta {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9CA3AF;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Reminder popup badge chips */
+.reminder-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  backdrop-filter: blur(6px);
+}
+
+.reminder-badge.urgent {
+  background: rgba(239, 68, 68, 0.25);
+  color: #FEE2E2;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.reminder-badge.near {
+  background: rgba(245, 158, 11, 0.25);
+  color: #FEF3C7;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Shake animation for bell in popup header */
+@keyframes bellShake {
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  15% {
+    transform: rotate(18deg);
+  }
+
+  30% {
+    transform: rotate(-16deg);
+  }
+
+  45% {
+    transform: rotate(12deg);
+  }
+
+  60% {
+    transform: rotate(-8deg);
+  }
+
+  75% {
+    transform: rotate(5deg);
+  }
+}
+
+.bell-shake {
+  animation: bellShake 0.7s ease-in-out;
+}
+
+/* Empty state in reminder popup */
+.reminder-empty {
+  text-align: center;
+  padding: 28px 0;
+}
+
+.reminder-empty-icon {
+  font-size: 40px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.reminder-empty-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: #6B7280;
+}
+
+.reminder-empty-sub {
+  font-size: 12px;
+  color: #A78BFA;
+  margin-top: 4px;
 }

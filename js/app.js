@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             editMatkulBtn.classList.add('active');
             editMatkulBtn.style.color = '#7C3AED';
-            
+
             switchView('view-onboarding');
             initOnboarding();
         });
@@ -552,25 +552,112 @@ function scheduleDeadlineNotifications(tasks) {
 }
 
 function triggerReminder() {
+    showReminderPopup();
+}
+
+// ============================================
+// CUSTOM REMINDER POPUP
+// ============================================
+function showReminderPopup() {
     const urgentTasks = AppState.tasks.filter(t => isUrgent(t.deadline, t.status));
     const nearTasks = AppState.tasks.filter(t => isNearDeadline(t.deadline, t.status) && !isUrgent(t.deadline, t.status));
 
-    if (urgentTasks.length === 0 && nearTasks.length === 0) {
-        alert('✅ Tidak ada tugas mendesak. Semangat!');
-        return;
+    const popup = document.getElementById('reminder-popup');
+    const taskList = document.getElementById('reminder-task-list');
+    const badges = document.getElementById('reminder-badges');
+    const titleEl = document.getElementById('reminder-popup-title');
+    const subEl = document.getElementById('reminder-popup-subtitle');
+    const bellIcon = document.getElementById('btn-reminder');
+
+    // Bell shake animation
+    if (bellIcon) {
+        bellIcon.classList.remove('bell-shake');
+        void bellIcon.offsetWidth; // reflow to restart animation
+        bellIcon.classList.add('bell-shake');
+        setTimeout(() => bellIcon.classList.remove('bell-shake'), 800);
     }
 
-    let msg = '';
-    if (urgentTasks.length > 0) msg += `🔴 ${urgentTasks.length} tugas sudah MELEWATI deadline!\n`;
-    if (nearTasks.length > 0) msg += `⚠️ ${nearTasks.length} tugas dalam 3 hari ke depan.\n`;
-    alert(msg.trim());
+    const allAlertTasks = [...urgentTasks, ...nearTasks];
 
-    if (Notification.permission === 'granted') {
-        new Notification('Anak Emas - Pengingat Tugas', {
-            body: msg.trim(),
+    // --- Empty state ---
+    if (allAlertTasks.length === 0) {
+        titleEl.textContent = 'Semua Aman! 🎉';
+        subEl.textContent = 'Tidak ada tugas mendesak saat ini.';
+        badges.innerHTML = '';
+        taskList.innerHTML = `
+            <div class="reminder-empty">
+                <span class="reminder-empty-icon">✅</span>
+                <p class="reminder-empty-text">Semua tugas terkendali!</p>
+                <p class="reminder-empty-sub">Tetap semangat Anak Emas 🌟</p>
+            </div>`;
+    } else {
+        const totalUrgent = urgentTasks.length;
+        const totalNear = nearTasks.length;
+
+        titleEl.textContent = totalUrgent > 0 ? '⚠️ Deadline Terlewat!' : '🕐 Deadline Mendekat!';
+        subEl.textContent = 'Tugas berikut membutuhkan perhatianmu segera:';
+
+        // Badges
+        badges.innerHTML = '';
+        if (totalUrgent > 0) {
+            badges.innerHTML += `<span class="reminder-badge urgent">🔴 ${totalUrgent} Terlewat</span>`;
+        }
+        if (totalNear > 0) {
+            badges.innerHTML += `<span class="reminder-badge near">⚠️ ${totalNear} Mendekati</span>`;
+        }
+
+        // Task items
+        taskList.innerHTML = '';
+        allAlertTasks.forEach(t => {
+            const isUrg = isUrgent(t.deadline, t.status);
+            const isNear = isNearDeadline(t.deadline, t.status) && !isUrg;
+            const typeClass = isUrg ? 'urgent' : (isNear ? 'near' : 'normal');
+            const icon = isUrg ? '🔴' : (isNear ? '⚠️' : '📌');
+            const dl = new Date(t.deadline);
+            const dateStr = dl.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+
+            const item = document.createElement('div');
+            item.className = `reminder-task-item ${typeClass}`;
+            item.innerHTML = `
+                <div class="reminder-task-icon ${typeClass}">${icon}</div>
+                <div class="reminder-task-body">
+                    <div class="reminder-task-title">${t.judul}</div>
+                    <div class="reminder-task-meta">📅 ${dateStr} &nbsp;•&nbsp; ${t.matkul}</div>
+                </div>`;
+            taskList.appendChild(item);
+        });
+    }
+
+    // Show popup
+    popup.classList.remove('hidden');
+    popup.classList.add('show');
+
+    // Send native push notification too if permitted
+    if (Notification.permission === 'granted' && allAlertTasks.length > 0) {
+        const urgCount = urgentTasks.length;
+        const nearCount = nearTasks.length;
+        let body = '';
+        if (urgCount > 0) body += `🔴 ${urgCount} tugas melewati deadline!\n`;
+        if (nearCount > 0) body += `⚠️ ${nearCount} tugas mendekati deadline.`;
+        new Notification('Anak Emas — Pengingat Tugas', {
+            body: body.trim(),
             tag: 'reminder-manual'
         });
     }
+}
+
+function closeReminderPopup() {
+    const popup = document.getElementById('reminder-popup');
+    const card = document.getElementById('reminder-card');
+    card.style.transform = 'translateY(100%)';
+    card.style.opacity = '0';
+    setTimeout(() => {
+        popup.classList.add('hidden');
+        popup.classList.remove('show');
+        // Reset card for next open
+        card.style.transform = '';
+        card.style.opacity = '';
+    }, 400);
 }
 
 function renderTasks() {
@@ -723,6 +810,37 @@ function renderTasks() {
             iconSvg.setAttribute('stroke', 'white');
             titleEl.style.color = '#9CA3AF';
             titleEl.style.textDecoration = 'line-through';
+
+            // --- MICRO-INTERACTIONS ---
+            // 1. Checkbox bounce pop
+            btn.classList.remove('checkbox-pop');
+            void btn.offsetWidth; // reflow to restart animation
+            btn.classList.add('checkbox-pop');
+            setTimeout(() => btn.classList.remove('checkbox-pop'), 500);
+
+            // 2. Play completion audio (reset to start for rapid clicks)
+            const sound = document.getElementById('complete-sound');
+            if (sound) {
+                sound.currentTime = 0;
+                sound.play().catch(() => { }); // ignore autoplay block gracefully
+            }
+
+            // 3. Confetti burst at checkbox position
+            if (typeof confetti === 'function') {
+                const rect = btn.getBoundingClientRect();
+                confetti({
+                    particleCount: 70,
+                    spread: 55,
+                    startVelocity: 28,
+                    decay: 0.92,
+                    scalar: 0.85,
+                    origin: {
+                        x: (rect.left + rect.width / 2) / window.innerWidth,
+                        y: (rect.top + rect.height / 2) / window.innerHeight
+                    },
+                    colors: ['#7C3AED', '#A78BFA', '#10B981', '#F59E0B', '#EC4899']
+                });
+            }
         } else {
             card.classList.remove('completed-task');
             btn.classList.remove('done');
@@ -744,7 +862,7 @@ function renderTasks() {
             if (isNowCompleted) doneSet.add(String(id));
             else doneSet.delete(String(id));
             localStorage.setItem(globalDoneKey, JSON.stringify([...doneSet]));
-            
+
             btn.disabled = false; // Buka kunci tombol
         } else {
             // Tugas Personal via Supabase (Butuh Waktu/Jaringan)
@@ -756,13 +874,13 @@ function renderTasks() {
                 // 3. REVERT: Kalau gagal kirim ke Supabase, batalkan centang dan beritahu user
                 task.status = oldStatus;
                 alert('Gagal menyinkronkan dengan server. Periksa jaringan Anda.');
-                
+
                 // Karena error, kita panggil render ulang untuk kembalikan state awal
                 renderTasks();
                 updateProgressRing();
             }
         }
-        
+
         // KITA TIDAK MEMANGGIL renderTasks() DI SINI JIKA SUKSES.
         // Inilah yang membuat animasi refresh / layar blank menghilang!
 
@@ -921,16 +1039,118 @@ function closeModal() {
 }
 
 // =============================================
-// NOTIFICATIONS
+// NOTIFICATIONS & WEB PUSH
 // =============================================
+
+// ⚠️ GANTI dengan public key VAPID milikmu sendiri!
+// Generate dengan: npx web-push generate-vapid-keys
+// Key PUBLIK aman ditaruh di sini. Key PRIVAT hanya di server/Edge Function.
+const VAPID_PUBLIC_KEY = 'YOUR_VAPID_PUBLIC_KEY_HERE';
+
 function requestNotificationPermission() {
     if ('Notification' in window && Notification.permission === 'default') {
         setTimeout(() => {
             Notification.requestPermission().then(perm => {
-                if (perm === 'granted' && AppState.tasks.length > 0) {
-                    checkUrgentTasks();
+                if (perm === 'granted') {
+                    if (AppState.tasks.length > 0) checkUrgentTasks();
+                    subscribeToPush(); // attempt Web Push subscription
                 }
             });
         }, 3000); // Delay 3s to let page settle
+    } else if (Notification.permission === 'granted') {
+        // Already granted on reload — try subscribing silently
+        subscribeToPush();
     }
 }
+
+// Convert base64 VAPID public key to Uint8Array for browser subscription
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+}
+
+async function subscribeToPush() {
+    // Skip if VAPID key is not configured
+    if (!VAPID_PUBLIC_KEY || VAPID_PUBLIC_KEY === 'YOUR_VAPID_PUBLIC_KEY_HERE') {
+        console.info('[Push] VAPID_PUBLIC_KEY belum dikonfigurasi. Lewati subscribe.');
+        return;
+    }
+    if (!('PushManager' in window)) {
+        console.warn('[Push] Browser tidak mendukung Web Push.');
+        return;
+    }
+    if (!AppState.user) return;
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+
+        // Check if already subscribed
+        let subscription = await registration.pushManager.getSubscription();
+
+        if (!subscription) {
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+        }
+
+        // Save subscription to Supabase (upsert so re-subscribes don't duplicate)
+        const { error } = await supabaseClient
+            .from('push_subscriptions')
+            .upsert([
+                {
+                    user_nim: AppState.user.nim,
+                    subscription: subscription.toJSON()
+                }
+            ], { onConflict: 'user_nim' });
+
+        if (error) {
+            console.error('[Push] Gagal simpan subscription:', error.message);
+        } else {
+            console.log('[Push] Subscription berhasil disimpan ke Supabase ✅');
+        }
+    } catch (err) {
+        console.error('[Push] Subscribe gagal:', err);
+    }
+}
+
+/*
+  =========================================================
+  ARSITEKTUR TRIGGER OTOMATIS (Edge Function Supabase)
+  =========================================================
+  Buat file: supabase/functions/send-reminders/index.ts
+
+  import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+  import webpush from 'npm:web-push'
+  import { createClient } from 'npm:@supabase/supabase-js@2'
+
+  serve(async () => {
+    const supabase = createClient(Deno.env.get('SUPABASE_URL'), Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))
+    webpush.setVapidDetails('mailto:kamu@email.com', Deno.env.get('VAPID_PUBLIC_KEY'), Deno.env.get('VAPID_PRIVATE_KEY'))
+
+    const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000).toISOString()
+    const now = new Date().toISOString()
+
+    const { data: tasks } = await supabase.from('tasks')
+      .select('*, users(nim)').eq('status', 'pending')
+      .gte('deadline', now).lte('deadline', oneHourFromNow)
+
+    for (const task of tasks ?? []) {
+      const { data: subs } = await supabase.from('push_subscriptions')
+        .select('subscription').eq('user_nim', task.user_nim)
+      for (const row of subs ?? []) {
+        await webpush.sendNotification(row.subscription, JSON.stringify({
+          title: '⏰ Deadline dalam 1 jam!',
+          body: `${task.judul} — ${task.matkul}`
+        }))
+      }
+    }
+    return new Response('ok')
+  })
+
+  Deploy: supabase functions deploy send-reminders --no-verify-jwt
+  Cron (Pro): supabase sql "select cron.schedule('send-reminders', '0 * * * *', $$select net.http_post('https://<project>.supabase.co/functions/v1/send-reminders', '{}', 'application/json', ARRAY[net.http_header('Authorization','Bearer <anon_key>')])$$);"
+  =========================================================
+*/

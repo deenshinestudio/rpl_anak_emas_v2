@@ -23,6 +23,7 @@
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
@@ -63,7 +64,8 @@
 
             <button id="nav-btn-edit-matkul" class="nav-item" aria-label="Edit Matkul">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
                 <span>Matkul</span>
             </button>
@@ -132,7 +134,9 @@
                             </button>
                         </form>
                     </div>
-                    <a href="https://www.instagram.com/deenshinestudio?igsh=OHVma3Azb2s3YnFp&utm_source=qr" target="_blank" style="display:block;text-align:center;font-size:12px;color:#C4B5FD;font-weight:700;margin-top:10px;">
+                    <a href="https://www.instagram.com/deenshinestudio?igsh=OHVma3Azb2s3YnFp&utm_source=qr"
+                        target="_blank"
+                        style="display:block;text-align:center;font-size:12px;color:#C4B5FD;font-weight:700;margin-top:10px;">
                         @deenshinestudio</a>
                 </div>
             </div>
@@ -153,8 +157,9 @@
                         <div>
                             <h2 style="font-size:20px;font-weight:800;color:#1E1B4B;line-height:1.2;">Pilih Mata Kuliah
                             </h2>
-                            <p style="font-size:11px;color:#7C3AED;font-weight:600;margin-top:2px;">Calon Mahasiswa Sedikit Rajin
-                                </p>
+                            <p style="font-size:11px;color:#7C3AED;font-weight:600;margin-top:2px;">Calon Mahasiswa
+                                Sedikit Rajin
+                            </p>
                         </div>
                     </div>
                     <!-- Tabs -->
@@ -179,7 +184,9 @@
                         <span id="course-count"
                             style="background:rgba(255,255,255,0.2);border-radius:20px;padding:2px 10px;font-size:11px;">0</span>
                     </button>
-                    <a href="https://www.instagram.com/deenshinestudio?igsh=OHVma3Azb2s3YnFp&utm_source=qr" target="_blank" style="display:block;text-align:center;font-size:12px;color:#C4B5FD;font-weight:700;margin-top:10px;">
+                    <a href="https://www.instagram.com/deenshinestudio?igsh=OHVma3Azb2s3YnFp&utm_source=qr"
+                        target="_blank"
+                        style="display:block;text-align:center;font-size:12px;color:#C4B5FD;font-weight:700;margin-top:10px;">
                         @deenshinestudio</a>
                 </div>
             </div>
@@ -397,6 +404,74 @@
                     Simpan Tugas
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- Audio for task completion -->
+    <audio id="complete-sound" src="assets/audio/sound-hidup-jokowi.mp3" preload="auto"></audio>
+
+    <!-- ===== REMINDER POPUP ===== -->
+    <div id="reminder-popup" class="hidden"
+        style="position:fixed;inset:0;z-index:500;display:none;align-items:flex-end;justify-content:center;">
+        <div id="reminder-backdrop" onclick="closeReminderPopup()"
+            style="position:absolute;inset:0;background:rgba(10,5,40,0.55);backdrop-filter:blur(8px);"></div>
+        <div id="reminder-card"
+            style="position:relative;width:100%;max-width:440px;background:#fff;border-radius:32px 32px 0 0;padding:0 0 40px;z-index:1;transform:translateY(100%);opacity:0;transition:transform 0.4s cubic-bezier(0.16,1,0.3,1),opacity 0.35s;overflow:hidden;">
+
+            <!-- Decorative header gradient -->
+            <div
+                style="background:linear-gradient(135deg,#4C1D95 0%,#7C3AED 50%,#2563EB 100%);padding:28px 24px 40px;position:relative;overflow:hidden;">
+                <!-- Decorative circles -->
+                <div
+                    style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;background:rgba(255,255,255,0.08);border-radius:50%;">
+                </div>
+                <div
+                    style="position:absolute;bottom:-30px;left:-10px;width:90px;height:90px;background:rgba(255,255,255,0.06);border-radius:50%;">
+                </div>
+                <!-- Bell icon -->
+                <div
+                    style="width:64px;height:64px;background:rgba(255,255,255,0.18);backdrop-filter:blur(10px);border:1.5px solid rgba(255,255,255,0.3);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;position:relative;z-index:1;">
+                    <svg width="32" height="32" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                </div>
+                <div style="position:relative;z-index:1;">
+                    <p
+                        style="font-size:11px;font-weight:700;color:rgba(196,181,253,0.9);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px;">
+                        Pengingat Tugas</p>
+                    <h2 style="font-size:20px;font-weight:800;color:#fff;line-height:1.2;" id="reminder-popup-title">
+                        Perhatian!</h2>
+                </div>
+                <!-- Badge counts -->
+                <div id="reminder-badges" style="display:flex;gap:8px;margin-top:12px;position:relative;z-index:1;">
+                </div>
+            </div>
+
+            <!-- Pull handle + content -->
+            <div style="width:40px;height:4px;background:#EDE9FE;border-radius:4px;margin:16px auto 0;"></div>
+            <div style="padding:16px 20px 0;">
+                <p style="font-size:12px;font-weight:600;color:#6B7280;margin-bottom:12px;"
+                    id="reminder-popup-subtitle">Tugas berikut membutuhkan perhatianmu segera:</p>
+                <!-- Task list -->
+                <div id="reminder-task-list"
+                    style="display:flex;flex-direction:column;gap:10px;max-height:240px;overflow-y:auto;padding-right:4px;">
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div style="padding:20px 20px 0;display:flex;gap:10px;">
+                <button onclick="closeReminderPopup()"
+                    style="flex:1;padding:14px;background:#F5F3FF;border:1.5px solid #EDE9FE;border-radius:14px;font-size:13px;font-weight:700;color:#7C3AED;cursor:pointer;font-family:inherit;transition:all 0.2s;"
+                    onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''">
+                    Tutup
+                </button>
+                <button onclick="closeReminderPopup()"
+                    style="flex:2;padding:14px;background:linear-gradient(135deg,#7C3AED,#4338CA);border:none;border-radius:14px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(124,58,237,0.35);transition:all 0.2s;"
+                    onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''">
+                    ✅ Siap, Saya Kerjakan!
+                </button>
+            </div>
         </div>
     </div>
 
