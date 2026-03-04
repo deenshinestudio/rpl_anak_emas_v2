@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RPL Anak Emas - Task Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { poppins: ['Poppins', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe',
+                            300: '#c4b5fd', 400: '#a78bfa', 500: '#8b5cf6',
+                            600: '#7c3aed', 700: '#6d28d9', 800: '#5b21b6', 900: '#4c1d95',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW Registered!', reg))
+                    .catch(err => console.error('SW Failed.', err));
+            });
+        }
+    </script>
+</head>
+
+<body class="font-poppins antialiased"
+    style="background:linear-gradient(155deg,#EDE9FE 0%,#E0F2FE 55%,#FCE7F3 100%); color:#1E1B4B; height:100dvh; overflow:hidden;">
+
+    <div id="app" style="position:relative; width:100%; height:100dvh; overflow:hidden;">
+
+        <!-- ===== BOTTOM NAVIGATION (Mobile First) ===== -->
+        <nav id="main-nav" class="hidden">
+            <button class="nav-item active" id="nav-btn-home" aria-label="Home">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span>Home</span>
+            </button>
+
+            <button id="nav-btn-admin" class="nav-item hidden" aria-label="Admin">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span>Admin</span>
+            </button>
+
+            <button id="nav-btn-edit-matkul" class="nav-item" aria-label="Edit Matkul">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <span>Matkul</span>
+            </button>
+
+            <button id="nav-btn-logout" class="nav-item" aria-label="Logout">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>Keluar</span>
+            </button>
+        </nav>
+
+        <!-- Workspace: all views live here -->
+        <div id="workspace" style="position:absolute; inset:0; overflow:hidden;">
+
+            <!-- ===== LOGIN VIEW ===== -->
+            <div id="view-login" class="view abstract-bg flex flex-col items-center justify-center overflow-y-auto"
+                style="background:linear-gradient(150deg,#4C1D95 0%,#4338CA 35%,#0369A1 75%,#0E7490 100%); padding:24px;">
+                <!-- Extra blob teal -->
+                <div class="blob-teal" style="top:60px;bottom:auto;left:auto;right:-30px;"></div>
+                <div style="width:100%;max-width:360px;position:relative;z-index:1;">
+                    <!-- Logo / Header -->
+                    <div class="text-center mb-8" style="color:white;">
+                        <div
+                            style="width:80px;height:80px;background:rgba(255,255,255,0.18);backdrop-filter:blur(12px);border:1.5px solid rgba(255,255,255,0.35);border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 12px 40px rgba(0,0,0,0.2);">
+                            <svg width="40" height="40" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                        </div>
+                        <h1
+                            style="font-size:26px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;text-shadow:0 2px 12px rgba(0,0,0,0.2);">
+                            RPL Anak Emas</h1>
+                        <p
+                            style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.75);letter-spacing:0.12em;text-transform:uppercase;margin-top:4px;">
+                            Tugas Negara Rakyat Jelata, Hidup Jo</p>
+                    </div>
+
+                    <!-- Login Card -->
+                    <div
+                        style="background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);border-radius:28px;padding:28px 24px;box-shadow:0 16px 48px rgba(0,0,0,0.2);border:1.5px solid rgba(255,255,255,0.6);">
+                        <form id="login-form">
+                            <div style="margin-bottom:16px;">
+                                <label
+                                    style="display:block;font-size:10px;font-weight:700;color:#6B7280;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">Nama
+                                    Lengkap</label>
+                                <input type="text" id="login-nama" required autocomplete="name"
+                                    style="width:100%;background:#F9F7FF;border:1.5px solid #E9D5FF;border-radius:14px;padding:13px 16px;font-size:14px;font-weight:500;color:#1E1B4B;font-family:inherit;transition:border-color 0.2s;"
+                                    placeholder="Masukkan nama Anda..." onfocus="this.style.borderColor='#7C3AED'"
+                                    onblur="this.style.borderColor='#E9D5FF'">
+                            </div>
+                            <div style="margin-bottom:24px;">
+                                <label
+                                    style="display:block;font-size:10px;font-weight:700;color:#6B7280;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">NIM</label>
+                                <input type="text" id="login-nim" required autocomplete="username"
+                                    style="width:100%;background:#F9F7FF;border:1.5px solid #E9D5FF;border-radius:14px;padding:13px 16px;font-size:14px;font-weight:500;color:#1E1B4B;font-family:inherit;transition:border-color 0.2s;"
+                                    placeholder="Contoh: G00012345" onfocus="this.style.borderColor='#7C3AED'"
+                                    onblur="this.style.borderColor='#E9D5FF'">
+                            </div>
+                            <button type="submit" id="login-submit-btn"
+                                style="width:100%;background:linear-gradient(135deg,#7C3AED,#6D28D9);color:#fff;font-weight:700;font-size:15px;padding:15px;border-radius:14px;border:none;cursor:pointer;box-shadow:0 8px 24px rgba(124,58,237,0.35);transition:all 0.2s;font-family:inherit;"
+                                onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''"
+                                ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+                                Masuk
+                            </button>
+                        </form>
+                    </div>
+                    <a href="https://www.instagram.com/deenshinestudio?igsh=OHVma3Azb2s3YnFp&utm_source=qr" target="_blank" style="display:block;text-align:center;font-size:12px;color:#C4B5FD;font-weight:700;margin-top:10px;">
+                        @deenshinestudio</a>
+                </div>
+            </div>
+
+            <!-- ===== ONBOARDING VIEW ===== -->
+            <div id="view-onboarding" class="view abstract-bg hidden flex-col"
+                style="background:linear-gradient(155deg,#EDE9FE 0%,#E0F2FE 55%,#FCE7F3 100%); display:flex; flex-direction:column;">
+                <!-- Header -->
+                <div style="padding:20px 20px 12px; background:transparent; flex-shrink:0;position:relative;z-index:1;">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                        <button id="btn-back-login"
+                            style="width:40px;height:40px;border-radius:50%;background:#fff;border:1.5px solid #EDE9FE;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.06); flex-shrink:0;">
+                            <svg width="18" height="18" fill="none" stroke="#7C3AED" stroke-width="2.5"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                        <div>
+                            <h2 style="font-size:20px;font-weight:800;color:#1E1B4B;line-height:1.2;">Pilih Mata Kuliah
+                            </h2>
+                            <p style="font-size:11px;color:#7C3AED;font-weight:600;margin-top:2px;">Calon Mahasiswa Sedikit Rajin
+                                </p>
+                        </div>
+                    </div>
+                    <!-- Tabs -->
+                    <div
+                        style="display:flex;gap:8px;background:#fff;border-radius:14px;padding:6px;border:1.5px solid #EDE9FE;">
+                        <button id="tab-odd"
+                            style="flex:1;padding:9px;font-size:12px;font-weight:700;border-radius:10px;border:none;background:linear-gradient(135deg,#7C3AED,#A78BFA);color:#fff;cursor:pointer;font-family:inherit;transition:all 0.2s;">Ganjil</button>
+                        <button id="tab-even"
+                            style="flex:1;padding:9px;font-size:12px;font-weight:700;border-radius:10px;border:none;background:transparent;color:#9CA3AF;cursor:pointer;font-family:inherit;transition:all 0.2s;">Genap</button>
+                    </div>
+                </div>
+                <!-- Course List -->
+                <div id="course-list"
+                    style="flex:1;overflow-y:auto;padding:0 20px 140px; -webkit-overflow-scrolling:touch;position:relative;z-index:1;">
+                </div>
+                <!-- Save Button Fixed -->
+                <div
+                    style="position:absolute;bottom:0;left:0;right:0;padding:16px 20px 28px;background:linear-gradient(to top,rgba(238,232,255,0.97) 65%,transparent);z-index:2;">
+                    <button id="btn-save-courses" disabled
+                        style="width:100%;background:linear-gradient(135deg,#7C3AED,#6D28D9);color:#fff;font-weight:700;font-size:14px;padding:16px;border-radius:16px;border:none;cursor:pointer;box-shadow:0 8px 24px rgba(124,58,237,0.3);font-family:inherit;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:10px;">
+                        Simpan &amp; Lanjutkan
+                        <span id="course-count"
+                            style="background:rgba(255,255,255,0.2);border-radius:20px;padding:2px 10px;font-size:11px;">0</span>
+                    </button>
+                    <a href="https://www.instagram.com/deenshinestudio?igsh=OHVma3Azb2s3YnFp&utm_source=qr" target="_blank" style="display:block;text-align:center;font-size:12px;color:#C4B5FD;font-weight:700;margin-top:10px;">
+                        @deenshinestudio</a>
+                </div>
+            </div>
+
+            <!-- ===== DASHBOARD VIEW ===== -->
+            <div id="view-dashboard" class="view abstract-bg hidden flex-col"
+                style="background:linear-gradient(155deg,#EDE9FE 0%,#E0F2FE 55%,#FCE7F3 100%); display:flex; flex-direction:column; padding-bottom:68px;">
+                <!-- Header -->
+                <!-- Extra teal blob for dashboard -->
+                <div class="blob-teal"></div>
+                <div style="padding:20px 20px 12px; flex-shrink:0;position:relative;z-index:1;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <div>
+                            <p
+                                style="font-size:12px;font-weight:600;color:#A78BFA;text-transform:uppercase;letter-spacing:0.1em;">
+                                Selamat Datang 👋</p>
+                            <h1 style="font-size:22px;font-weight:800;color:#1E1B4B;margin-top:2px;">
+                                <span id="profile-name">Pengguna</span>
+                            </h1>
+                        </div>
+                        <!-- Notification Bell -->
+                        <button id="btn-reminder"
+                            style="position:relative;width:44px;height:44px;background:#fff;border:1.5px solid #EDE9FE;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 10px rgba(124,58,237,0.08);flex-shrink:0;">
+                            <svg width="22" height="22" fill="none" stroke="#7C3AED" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span id="notif-dot" class="hidden"
+                                style="position:absolute;top:8px;right:9px;width:9px;height:9px;background:#EF4444;border:2px solid #fff;border-radius:50%;display:block;"></span>
+                        </button>
+                    </div>
+
+                    <!-- ===== PROGRESS PANEL ===== -->
+                    <div class="progress-panel"
+                        style="background:linear-gradient(135deg,#5B21B6 0%,#4338CA 50%,#0369A1 100%);">
+                        <!-- Ring -->
+                        <div class="progress-ring-wrap">
+                            <svg viewBox="0 0 36 36">
+                                <!-- Track -->
+                                <path style="color:rgba(255,255,255,0.15);"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    fill="none" stroke="currentColor" stroke-width="3.5" />
+                                <!-- Progress -->
+                                <path id="progress-ring"
+                                    style="color:#A78BFA;transition:stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1);"
+                                    stroke-dasharray="100,100" stroke-dashoffset="100"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+                            </svg>
+                            <div class="progress-center">
+                                <span class="pct" id="progress-text">0%</span>
+                                <span class="pct-label">Selesai</span>
+                            </div>
+                        </div>
+                        <!-- Stats -->
+                        <div class="stats-grid">
+                            <div class="stat-row">
+                                <div class="stat-dot" style="background:#10B981;"></div>
+                                <div class="stat-info">
+                                    <div class="stat-label">Selesai</div>
+                                    <div class="stat-value" id="stat-done">0</div>
+                                </div>
+                            </div>
+                            <div class="stat-row">
+                                <div class="stat-dot" style="background:#F59E0B;"></div>
+                                <div class="stat-info">
+                                    <div class="stat-label">Belum</div>
+                                    <div class="stat-value" id="stat-pending">0</div>
+                                </div>
+                            </div>
+                            <div class="stat-row">
+                                <div class="stat-dot" style="background:rgba(255,255,255,0.5);"></div>
+                                <div class="stat-info">
+                                    <div class="stat-label">Total</div>
+                                    <div class="stat-value" id="stat-total">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div style="padding:10px 20px;flex-shrink:0;position:relative;z-index:1;">
+                    <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;" class="no-scrollbar">
+                        <button class="filter-chip active" data-filter="all">Semua</button>
+                        <button class="filter-chip" data-filter="Mandiri">Mandiri</button>
+                        <button class="filter-chip" data-filter="Kelompok">Kelompok</button>
+                        <button class="filter-chip" data-filter="Global">Global</button>
+                    </div>
+                </div>
+
+                <!-- Task List -->
+                <div id="task-container"
+                    style="flex:1;overflow-y:auto;padding:0 16px;-webkit-overflow-scrolling:touch;position:relative;z-index:1;">
+                </div>
+
+                <!-- Add Task FAB -->
+                <button id="btn-add-task"
+                    style="position:fixed;bottom:80px;right:20px;width:54px;height:54px;background:linear-gradient(135deg,#7C3AED,#6D28D9);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(124,58,237,0.4);border:none;cursor:pointer;z-index:50;transition:transform 0.2s;"
+                    onmousedown="this.style.transform='scale(0.93)'" onmouseup="this.style.transform=''"
+                    ontouchstart="this.style.transform='scale(0.93)'" ontouchend="this.style.transform=''">
+                    <svg width="24" height="24" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- ===== ADMIN VIEW ===== -->
+            <div id="view-admin" class="view abstract-bg hidden flex-col"
+                style="background:linear-gradient(155deg,#EDE9FE 0%,#E0F2FE 55%,#FCE7F3 100%); display:flex; flex-direction:column; padding-bottom:68px;">
+                <!-- Header -->
+                <div
+                    style="background:linear-gradient(135deg,#5B21B6 0%,#4338CA 50%,#0369A1 100%);padding:20px 20px 16px;flex-shrink:0;box-shadow:0 4px 20px rgba(67,56,202,0.25);border-radius:0 0 28px 28px;position:relative;z-index:2;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <p
+                                style="font-size:11px;font-weight:700;color:rgba(167,139,250,0.9);text-transform:uppercase;letter-spacing:0.12em;">
+                                Admin Panel</p>
+                            <h1 style="font-size:20px;font-weight:800;color:#ffffff;margin-top:2px;">Kelola Tugas Global
+                            </h1>
+                        </div>
+                        <button id="btn-add-global"
+                            style="background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);border:1.5px solid rgba(255,255,255,0.3);color:#fff;padding:10px 14px;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:inherit;box-shadow:0 4px 14px rgba(0,0,0,0.15);">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Tugas Global
+                        </button>
+                    </div>
+                </div>
+                <!-- Admin Task List -->
+                <div id="admin-task-container"
+                    style="flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;position:relative;z-index:1;">
+                </div>
+            </div>
+
+        </div><!-- end #workspace -->
+    </div><!-- end #app -->
+
+    <!-- ===== MODAL: Add/Edit Task ===== -->
+    <div id="modal-add-task" class="hidden"
+        style="position:fixed;inset:0;z-index:200;display:none;align-items:flex-end;justify-content:center;">
+        <div id="modal-backdrop"
+            style="position:absolute;inset:0;background:rgba(30,10,80,0.5);backdrop-filter:blur(6px);"></div>
+        <div id="modal-content"
+            style="position:relative;width:100%;max-width:480px;background:#fff;border-radius:28px 28px 0 0;padding:24px 24px 40px;z-index:1;transform:translateY(100%);opacity:0;transition:transform 0.35s cubic-bezier(0.16,1,0.3,1),opacity 0.3s;">
+            <div style="width:40px;height:4px;background:#EDE9FE;border-radius:4px;margin:0 auto 20px;"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h3 style="font-size:18px;font-weight:800;color:#1E1B4B;" id="modal-title">Tambah Tugas</h3>
+                <button class="close-modal"
+                    style="width:34px;height:34px;border-radius:50%;background:#F5F3FF;border:1.5px solid #EDE9FE;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                    <svg width="16" height="16" fill="none" stroke="#7C3AED" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="form-add-task">
+                <input type="hidden" id="task-id">
+                <input type="hidden" id="task-is-global" value="false">
+
+                <div style="margin-bottom:14px;">
+                    <label
+                        style="display:block;font-size:10px;font-weight:700;color:#6B7280;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">Mata
+                        Kuliah</label>
+                    <div style="position:relative;">
+                        <select id="task-matkul" required
+                            style="width:100%;background:#F9F7FF;border:1.5px solid #E9D5FF;border-radius:14px;padding:12px 40px 12px 16px;font-size:13px;font-weight:600;color:#1E1B4B;appearance:none;-webkit-appearance:none;font-family:inherit;cursor:pointer;"></select>
+                        <div
+                            style="position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:#A78BFA;">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:14px;">
+                    <label
+                        style="display:block;font-size:10px;font-weight:700;color:#6B7280;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">Judul
+                        Tugas</label>
+                    <input type="text" id="task-judul" required
+                        style="width:100%;background:#F9F7FF;border:1.5px solid #E9D5FF;border-radius:14px;padding:12px 16px;font-size:13px;font-weight:600;color:#1E1B4B;font-family:inherit;"
+                        placeholder="Misal: Makalah BAB 1">
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+                    <div id="jenis-container">
+                        <label
+                            style="display:block;font-size:10px;font-weight:700;color:#6B7280;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">Jenis</label>
+                        <div
+                            style="display:flex;background:#F9F7FF;border:1.5px solid #E9D5FF;border-radius:14px;padding:4px;position:relative;height:44px;">
+                            <button type="button" class="type-toggle active" data-type="Mandiri"
+                                style="flex:1;font-size:11px;font-weight:700;border:none;background:transparent;position:relative;z-index:2;cursor:pointer;color:#7C3AED;font-family:inherit;">Mandiri</button>
+                            <button type="button" class="type-toggle" data-type="Kelompok"
+                                style="flex:1;font-size:11px;font-weight:700;border:none;background:transparent;position:relative;z-index:2;cursor:pointer;color:#9CA3AF;font-family:inherit;">Klp</button>
+                            <div id="type-bg"
+                                style="position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);background:#fff;border-radius:10px;border:1.5px solid #EDE9FE;transition:transform 0.25s;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+                            </div>
+                        </div>
+                        <input type="hidden" id="task-jenis" value="Mandiri">
+                    </div>
+                    <div>
+                        <label
+                            style="display:block;font-size:10px;font-weight:700;color:#6B7280;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">Deadline</label>
+                        <input type="date" id="task-deadline" required
+                            style="width:100%;background:#F9F7FF;border:1.5px solid #E9D5FF;border-radius:14px;padding:10px 12px;font-size:13px;font-weight:600;color:#1E1B4B;font-family:inherit;height:44px;">
+                    </div>
+                </div>
+
+                <button type="submit"
+                    style="width:100%;background:linear-gradient(135deg,#7C3AED,#6D28D9);color:#fff;font-weight:700;font-size:14px;padding:15px;border-radius:14px;border:none;cursor:pointer;box-shadow:0 8px 24px rgba(124,58,237,0.3);font-family:inherit;transition:all 0.2s;">
+                    Simpan Tugas
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/supabase.js"></script>
+    <script src="js/courses.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
