@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rpl-anak-emas-v2';
+const CACHE_NAME = 'rpl-anak-emas-v3';
 const ASSETS = [
     './',
     './index.html',
@@ -54,8 +54,8 @@ self.addEventListener('push', (e) => {
 
     const options = {
         body: data.body,
-        icon: '/assets/icons/icon-192x192.png',
-        badge: '/assets/icons/icon-72x72.png',
+        icon: '/assets/icons/icon.svg',
+        badge: '/assets/icons/icon.svg',
         tag: data.tag || 'rpl-push-notif',
         requireInteraction: false,
         vibrate: [200, 100, 200],
