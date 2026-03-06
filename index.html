@@ -32,8 +32,30 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('SW Registered!', reg))
+                    .then(reg => {
+                        console.log('SW Registered!', reg);
+
+                        // Detect when a new service worker is installing
+                        reg.addEventListener('updatefound', () => {
+                            const newWorker = reg.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                // Has a new service worker taken control?
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('New app update available. Reloading...');
+                                }
+                            });
+                        });
+                    })
                     .catch(err => console.error('SW Failed.', err));
+
+                // When the service worker actually changes control (due to skipWaiting), reload the page
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (!refreshing) {
+                        refreshing = true;
+                        window.location.reload();
+                    }
+                });
             });
         }
     </script>

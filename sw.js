@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rpl-anak-emas-v2';
+const CACHE_NAME = 'rpl-anak-emas-v3';
 const ASSETS = [
     './',
     './index.html',
