@@ -772,6 +772,12 @@ function renderTasks() {
                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
                         ${dateStr}
+                        ${!task.is_global ? `
+                        <div style="margin-left:auto;display:flex;gap:4px;">
+                            <button class="btn-edit-task" data-id="${task.id}" style="background:none;border:none;padding:2px 4px;cursor:pointer;font-size:13px;border-radius:4px;transition:background 0.2s;" title="Edit Tugas" onmouseover="this.style.background='rgba(124,58,237,0.1)'" onmouseout="this.style.background='none'">✏️</button>
+                            <button class="btn-delete-task" data-id="${task.id}" style="background:none;border:none;padding:2px 4px;cursor:pointer;font-size:13px;border-radius:4px;transition:background 0.2s;" title="Hapus Tugas" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='none'">🗑️</button>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
                 <div style="position:relative;flex-shrink:0;">
@@ -797,6 +803,20 @@ function renderTasks() {
 
     // *** EVENT DELEGATION at container level (Optimistic UI Update) ***
     container.addEventListener('click', async (e) => {
+        const editBtn = e.target.closest('.btn-edit-task');
+        if (editBtn) {
+            e.stopPropagation();
+            openEditModal(editBtn.dataset.id);
+            return;
+        }
+
+        const delBtn = e.target.closest('.btn-delete-task');
+        if (delBtn) {
+            e.stopPropagation();
+            deleteTask(delBtn.dataset.id);
+            return;
+        }
+
         const btn = e.target.closest('.toggle-status');
         if (!btn) return;
         e.stopPropagation();
@@ -1016,13 +1036,14 @@ async function fetchAdminGlobalTasks() {
 }
 
 // =============================================
-// MODAL
+// MODAL & CRUD
 // =============================================
 function openModal(isGlobal) {
     document.getElementById('form-add-task').reset();
     document.getElementById('task-id').value = '';
     document.getElementById('task-is-global').value = isGlobal ? 'true' : 'false';
     document.getElementById('modal-title').textContent = isGlobal ? 'Tambah Tugas Global' : 'Tambah Tugas';
+    document.querySelector('#form-add-task button[type="submit"]').textContent = 'Simpan Tugas';
 
     const jenisContainer = document.getElementById('jenis-container');
     jenisContainer.style.display = isGlobal ? 'none' : '';
@@ -1050,6 +1071,72 @@ function openModal(isGlobal) {
             document.getElementById('modal-content').style.opacity = '1';
         });
     });
+}
+
+function openEditModal(taskId) {
+    const task = AppState.tasks.find(t => String(t.id) === String(taskId));
+    if (!task) return;
+
+    // Reuse the existing modal, but populate it
+    document.getElementById('form-add-task').reset();
+    document.getElementById('task-id').value = task.id;
+    document.getElementById('task-is-global').value = task.is_global ? 'true' : 'false';
+    document.getElementById('modal-title').textContent = 'Edit Tugas';
+    document.querySelector('#form-add-task button[type="submit"]').textContent = 'Simpan Perubahan';
+
+    const jenisContainer = document.getElementById('jenis-container');
+    jenisContainer.style.display = task.is_global ? 'none' : '';
+
+    document.getElementById('task-matkul').value = task.matkul;
+    document.getElementById('task-judul').value = task.judul;
+    document.getElementById('task-deadline').value = task.deadline;
+
+    if (!task.is_global) {
+        document.getElementById('task-jenis').value = task.jenis_tugas;
+        const isKelompok = task.jenis_tugas === 'Kelompok';
+        document.getElementById('type-bg').style.transform = isKelompok ? 'translateX(100%)' : 'translateX(0)';
+        document.querySelectorAll('.type-toggle').forEach(b => {
+            b.classList.remove('active');
+            b.style.color = '#9CA3AF';
+        });
+        const btnSelector = isKelompok ? '.type-toggle[data-type="Kelompok"]' : '.type-toggle[data-type="Mandiri"]';
+        const typeBtn = document.querySelector(btnSelector);
+        if (typeBtn) { typeBtn.classList.add('active'); typeBtn.style.color = '#7C3AED'; }
+    }
+
+    const modal = document.getElementById('modal-add-task');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            document.getElementById('modal-content').style.transform = 'translateY(0)';
+            document.getElementById('modal-content').style.opacity = '1';
+        });
+    });
+}
+
+async function deleteTask(taskId) {
+    if (!confirm('Apakah kamu yakin ingin menghapus tugas ini?')) return;
+
+    // Optimistic UI delete
+    const originalTasks = [...AppState.tasks];
+    AppState.tasks = AppState.tasks.filter(t => String(t.id) !== String(taskId));
+    renderTasks();
+    updateProgressRing();
+    checkUrgentTasks();
+
+    try {
+        const { error } = await supabaseClient.from('tasks').delete().eq('id', taskId);
+        if (error) throw error;
+    } catch (err) {
+        console.error('Delete error', err);
+        alert('Gagal menghapus tugas. Periksa koneksi Anda.');
+        // Revert UI if fail
+        AppState.tasks = originalTasks;
+        renderTasks();
+        updateProgressRing();
+        checkUrgentTasks();
+    }
 }
 
 function closeModal() {
