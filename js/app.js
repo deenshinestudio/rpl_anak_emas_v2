@@ -796,7 +796,7 @@ function renderTasks() {
 
     // Footer
     const footer = document.createElement('a');
-    footer.href = 'https://www.instagram.com/deenshinestudio?igsh=OHVma3Azb2s3YnFp&utm_source=qr';
+    footer.href = 'https://www.instagram.com/dinsaalim?igsh=aXJscGxgMWl4cHRh&utm_source=qr';
     footer.target = '_blank'; // Membuka di tab baru
     footer.style.cssText = 'display:block;text-align:center;font-size:10px;font-weight:700;color:#D1D5DB;margin:24px 0 8px;text-decoration:none;';
     footer.textContent = '@deenshinestudio';
@@ -1024,7 +1024,7 @@ async function fetchAdminGlobalTasks() {
         }
 
         const footer = document.createElement('a');
-        footer.href = 'https://www.instagram.com/deenshinestudio?igsh=OHVma3Azb2s3YnFp&utm_source=qr';
+        footer.href = 'https://www.instagram.com/dinsaalim?igsh=aXJscGxgMWl4cHRh&utm_source=qr';
         footer.target = '_blank'; // Membuka di tab baru
         footer.style.cssText = 'display:block;text-align:center;font-size:10px;font-weight:700;color:#D1D5DB;margin:24px 0 8px;text-decoration:none;';
         footer.textContent = '@deenshinestudio';
@@ -1157,7 +1157,7 @@ function closeModal() {
 // ⚠️ GANTI dengan public key VAPID milikmu sendiri!
 // Generate dengan: npx web-push generate-vapid-keys
 // Key PUBLIK aman ditaruh di sini. Key PRIVAT hanya di server/Edge Function.
-const VAPID_PUBLIC_KEY = 'BOY0nq_4NfpSNKd77yQ_dTX7LL-6f7gWonECqMx2TxCKJ4iGAaM5XETor7rFWPP6pJipJ8TnCmug-W9xVVcI9DA';
+const VAPID_PUBLIC_KEY = 'BMBV4cG4-UufMswEfuGKsk3PclrLhsnPyjEZ4QNWC-ezRBRKC4VKYbsHFvya7tUWMkt0d0T0dFAJOSffBmv9cug';
 
 // Show/hide the notification banner based on current permission state
 function showNotifBannerIfNeeded() {
